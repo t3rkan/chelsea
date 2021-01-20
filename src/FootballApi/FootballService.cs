@@ -23,12 +23,12 @@ namespace FootballApi
         }
 
 
-        // Standings from one {league} & {season}
+        // Standings from one {team} & {season}
         public async Task<List<FootballResponse>> GetStandingsAsync(
-                int leagueId, int season)
+                int teamId, int season)
         {
             var response = await _client.GetAsync(
-                    $"/standings?league={leagueId}&season={season}");
+                    $"/standings?team={teamId}&season={season}");
 
             return response;
         }
