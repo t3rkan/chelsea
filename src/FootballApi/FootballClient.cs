@@ -25,35 +25,62 @@ namespace FootballApi
             _client.DefaultRequestHeaders.Add("X-RapidAPI-Key", authToken);
         }
 
-        public async Task<FootballResponse> GetAsync(string path)
+        public async Task<List<FootballResponse>> GetAsync(string path)
         {
-            FootballResponse footballRes = null;
+            List<FootballResponse> responses = new List<FootballResponse>();
 
             try
             {
-                var res = await _client.GetAsync(path);
+                var currentPage = 1;
+                var pageParam = "";
 
-                if(res.StatusCode == HttpStatusCode.OK)
+                while(true)
                 {
-                    var resAsString = await res.Content.ReadAsStringAsync();
+                    var res = await _client.GetAsync(path + pageParam);
 
-                    footballRes = this.MapResponse(resAsString);
-
-                    if(!footballRes.HasErrors)
+                    if(res.StatusCode == HttpStatusCode.OK)
                     {
-                        this.MapHeaders(res, footballRes);
-                    }
-                    else throw new Exception(footballRes.ToString());
-                }
-                else throw new Exception(res.StatusCode.ToString());
+                        var resAsString = await res.Content.ReadAsStringAsync();
 
+                        var footballRes = this.MapResponse(resAsString);
+
+                        if(!this.HasErrors(footballRes))
+                        {
+                            this.MapHeaders(res, footballRes);
+
+                            responses.Add(footballRes);
+
+                            if(currentPage != this.GetTotalPages(footballRes))
+                            {
+                                currentPage++;
+                                pageParam = $"&page={currentPage}";
+                            }
+                            else break;
+                        }
+                        else throw new Exception(footballRes.ToString());
+                    }
+                    else throw new Exception(res.StatusCode.ToString());
+                }
             }
             catch
             {
                 throw;
             }
 
-            return footballRes;
+            return responses;
+        }
+
+        private int GetTotalPages(FootballResponse res)
+        {
+            var paging = JsonSerializer
+                .Deserialize<Dictionary<string, int>>(res.Paging.ToString());
+
+            return paging["total"];
+        }
+
+        private bool HasErrors(FootballResponse res)
+        {
+            return !(res.Errors.ValueKind == JsonValueKind.Array);
         }
 
         private void MapHeaders(
@@ -75,6 +102,5 @@ namespace FootballApi
 
             return footballRes;
         }
-
     }
 }

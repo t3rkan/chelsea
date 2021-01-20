@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace FootballApi
 {
@@ -12,7 +13,8 @@ namespace FootballApi
         }
 
         // Leagues in which the {team} has played at least one match in {season}
-        public async Task<FootballResponse> GetLeaguesAsync(int teamId, int season)
+        public async Task<List<FootballResponse>> GetLeaguesAsync(
+                int teamId, int season)
         {
             var response = await _client.GetAsync(
                     $"/leagues?team={teamId}&season={season}");
@@ -22,7 +24,7 @@ namespace FootballApi
 
 
         // Standings from one {league} & {season}
-        public async Task<FootballResponse> GetStandingsAsync(
+        public async Task<List<FootballResponse>> GetStandingsAsync(
                 int leagueId, int season)
         {
             var response = await _client.GetAsync(
@@ -32,7 +34,7 @@ namespace FootballApi
         }
 
         // Fixtures for a {team} in a {season}
-        public async Task<FootballResponse> GetFixturesAsync(int teamId, int season)
+        public async Task<List<FootballResponse>> GetFixturesAsync(int teamId, int season)
         {
             var response = await _client.GetAsync(
                     $"/fixtures?team={teamId}&season={season}");
@@ -41,7 +43,7 @@ namespace FootballApi
         }
 
         // Player statistics from one {team} & {season}
-        public async Task<FootballResponse> GetPlayersStatisticsAsync(
+        public async Task<List<FootballResponse>> GetPlayersStatisticsAsync(
                 int teamId, int season)
         {
             var response = await _client.GetAsync(

@@ -13,8 +13,6 @@ namespace FootballApi
         public JsonElement Response { get; set; }
         public int? RequestsRemaining { get; set; }
 
-        public bool HasErrors => !(this.Errors.ValueKind == JsonValueKind.Array);
-
         public override string ToString()
         {
             StringBuilder strBuilder = new StringBuilder();
