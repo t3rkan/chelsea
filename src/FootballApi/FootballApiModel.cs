@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace FootballApi
 {
-    public class FootballResponse
+    public class FootballApiModel
     {
         public JsonElement Get { get; set; }
         public JsonElement Parameters { get; set; }

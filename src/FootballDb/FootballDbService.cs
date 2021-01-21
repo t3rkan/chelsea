@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text.Json;
 using MongoDB.Driver;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using FootballApi;
 
 namespace FootballDb
@@ -11,77 +13,77 @@ namespace FootballDb
     {
         private const string ConnectionString = "mongodb://localhost:27017";
         private const string DatabaseName = "API-Football-Database";
-        private const string CollectionName = "Responses";
+        private const string CollectionName = "Models";
 
-        private readonly IMongoCollection<FootballDbModel> _responses;
-        private readonly FootballService _footballService;
+        private readonly IMongoCollection<FootballDbModel> _dbModels;
+        private readonly FootballApiService _apiService;
 
-        public FootballDbService(FootballService footballService)
+        public FootballDbService(FootballApiService apiService)
         {
             var client = new MongoClient(ConnectionString);
 
             var database = client.GetDatabase(DatabaseName);
 
-            _responses = database.GetCollection<FootballDbModel>(CollectionName);
+            _dbModels = database.GetCollection<FootballDbModel>(CollectionName);
 
-            _footballService = footballService;
+            _apiService = apiService;
         }
 
-        public long Count() => _responses.EstimatedDocumentCount();
+        public long Count() => _dbModels.EstimatedDocumentCount();
 
-        private void InsertMany(IEnumerable<FootballDbModel> responses) =>
-            _responses.InsertMany(responses);
+        private void InsertMany(IEnumerable<FootballDbModel> dbModels) =>
+            _dbModels.InsertMany(dbModels);
 
-        public DeleteResult DeleteAll() => _responses.DeleteMany(x => true);
+        public DeleteResult DeleteAll() => _dbModels.DeleteMany(x => true);
 
-        public List<FootballDbModel> Get() => _responses.Find(x => true).ToList();
+        public List<FootballDbModel> Get() => _dbModels.Find(x => true).ToList();
 
         public async Task SeedAsync()
         {
             if(this.Count() == 0)
             {
-                var responses = await this.GetResponses();
+                var dbModels = await this.GetDbModels();
 
-                this.InsertMany(responses);
+                this.InsertMany(dbModels);
             }
         }
 
-        private async Task<IEnumerable<FootballDbModel>> GetResponses()
+        private async Task<IEnumerable<FootballDbModel>> GetDbModels()
         {
-            var footballResponses = new List<FootballResponse>();
+            var apiModels = new List<FootballApiModel>();
 
-            var leagues = await _footballService.GetLeaguesAsync(49, 2019);
-            var standings = await _footballService.GetStandingsAsync(49, 2019);
-            var fixtures = await _footballService.GetFixturesAsync(49, 2019);
-            var players = await _footballService.GetPlayersStatisticsAsync(49, 2019);
+            var leagues = await _apiService.GetLeaguesAsync(49, 2019);
+            var standings = await _apiService.GetStandingsAsync(49, 2019);
+            var fixtures = await _apiService.GetFixturesAsync(49, 2019);
+            var players = await _apiService.GetPlayersStatisticsAsync(49, 2019);
 
-            footballResponses = footballResponses
+            apiModels = apiModels
                 .Concat(leagues)
                 .Concat(standings)
                 .Concat(fixtures)
                 .Concat(players)
                 .ToList();
 
-            var dbModels = footballResponses
-                .Select(x => this.MapResponse(x));
+            var dbModels = apiModels.Select(x => this.MapApiModels(x));
 
             return dbModels;
         }
 
-        // TODO: Content should not be string
-        private FootballDbModel MapResponse(FootballResponse res) =>
+        private FootballDbModel MapApiModels(FootballApiModel apiModel) =>
             new FootballDbModel
             {
-                Endpoint = res.Get.ToString(),
+                Endpoint = apiModel.Get.ToString(),
                 Parameters = JsonSerializer
                     .Deserialize<Dictionary<string, string>>(
-                            res.Parameters.ToString()),
-                Results = res.Results.GetInt32(),
+                            apiModel.Parameters.ToString()),
+                Results = apiModel.Results.GetInt32(),
                 Paging = JsonSerializer
                     .Deserialize<Dictionary<string, int>>(
-                            res.Paging.ToString()),
-                Content = res.Response.ToString(),
-                RequestsRemaining = res.RequestsRemaining
+                            apiModel.Paging.ToString()),
+                Content = BsonSerializer
+                    .Deserialize<BsonArray>(
+                            apiModel.Response.ToString()),
+                RequestsRemaining = apiModel.RequestsRemaining
             };
     }
 }
