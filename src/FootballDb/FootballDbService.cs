@@ -38,6 +38,26 @@ namespace FootballDb
 
         public List<FootballDbModel> Get() => _dbModels.Find(x => true).ToList();
 
+        public FootballDbModel Get(
+                string endpoint, int team, int season, int page)
+        {
+            var filter = Builders<FootballDbModel>.Filter
+                .Eq("Endpoint", endpoint);
+            var projection = Builders<FootballDbModel>.Projection
+                .Exclude("_id");
+
+            var model = _dbModels
+                .Find<FootballDbModel>(filter)
+                .Project<FootballDbModel>(projection)
+                .ToList()
+                .FirstOrDefault(x =>
+                        x.Parameters["team"] == team.ToString() &&
+                        x.Parameters["season"] == season.ToString() &&
+                        x.Paging["current"] == page);
+
+            return model;
+        }
+
         public async Task SeedAsync()
         {
             if(this.Count() == 0)
